@@ -77,7 +77,7 @@ export default function FeedPage() {
           fontWeight: "bold",
           marginBottom: "20px"
         }}>
-          Community Feed
+          Following Feed
         </h1>
 
         {posts.map(post => {

@@ -24,10 +24,16 @@ export default function UserPage() {
   const [imagePreview, setImagePreview] = useState(null);
   const [description, setDescription] = useState("");
 
+  // FOLLOW STATE
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followingList, setFollowingList] = useState([]);
+  const [showFollowingModal, setShowFollowingModal] = useState(false);
+
   useEffect(() => {
     if (!userId) return;
-
     loadData();
+    loadCurrentUser();
+    fetchFollowStatus();
   }, [userId]);
 
   const loadData = async () => {
@@ -37,7 +43,6 @@ export default function UserPage() {
     setUser(data.user);
     setPosts(data.posts || []);
 
-    // comments
     for (const post of data.posts || []) {
       const res = await fetch(`/api/posts/${post.id}/comments`);
       const c = await res.json();
@@ -55,17 +60,51 @@ export default function UserPage() {
     setCurrentUser(data.user);
   };
 
-  useEffect(() => {
-    loadCurrentUser();
-  }, []);
-
   const isOwnProfile =
     currentUser && String(currentUser.id) === String(userId);
 
+  // ✅ GET follow status (SOURCE OF TRUTH)
+  const fetchFollowStatus = async () => {
+    try {
+      const res = await fetch(`/api/users/${userId}/follow/status`);
+      const data = await res.json();
+      setIsFollowing(data.following);
+    } catch (err) {
+      console.error("fetchFollowStatus error:", err);
+    }
+  };
+
+  // ✅ FOLLOW / UNFOLLOW (USE RESPONSE, DO NOT TOGGLE)
+  const toggleFollow = async () => {
+    try {
+      const res = await fetch(`/api/users/${userId}/follow`, {
+        method: "POST"
+      });
+
+      const data = await res.json();
+      setIsFollowing(data.following);
+
+    } catch (err) {
+      console.error("toggleFollow error:", err);
+    }
+  };
+
+  // ✅ GET FOLLOWING LIST OF PROFILE USER
+  const loadFollowing = async () => {
+    try {
+      const res = await fetch(`/api/users/${userId}/following`);
+      const data = await res.json();
+
+      setFollowingList(data.users || []);
+      setShowFollowingModal(true);
+
+    } catch (err) {
+      console.error("loadFollowing error:", err);
+    }
+  };
+
   const toggleLike = async (postId) => {
     await fetch(`/api/posts/${postId}/like`, { method: "POST" });
-
-    // IMPORTANT: reload correct API (not feed, not posts endpoint)
     loadData();
   };
 
@@ -149,17 +188,36 @@ export default function UserPage() {
           borderRadius: "12px",
           marginBottom: "20px",
           display: "flex",
-          justifyContent: "space-between"
+          justifyContent: "space-between",
+          alignItems: "center"
         }}>
           <h1 style={{ fontSize: "24px", fontWeight: "bold" }}>
             {user ? `${user.username}'s Garden` : "Loading..."}
           </h1>
 
-          {isOwnProfile && (
+          <div style={{ display: "flex", gap: "10px" }}>
+
+            {!isOwnProfile && (
+              <button
+                onClick={toggleFollow}
+                style={{
+                  background: isFollowing ? "#e5e7eb" : "#16a34a",
+                  color: isFollowing ? "black" : "white",
+                  padding: "8px 14px",
+                  borderRadius: "8px",
+                  border: "none",
+                  cursor: "pointer",
+                  fontWeight: "bold"
+                }}
+              >
+                {isFollowing ? "Unfollow" : "Follow"}
+              </button>
+            )}
+
             <button
-              onClick={() => setShowModal(true)}
+              onClick={loadFollowing}
               style={{
-                background: "#16a34a",
+                background: "#2563eb",
                 color: "white",
                 padding: "8px 14px",
                 borderRadius: "8px",
@@ -168,12 +226,30 @@ export default function UserPage() {
                 fontWeight: "bold"
               }}
             >
-              Create Post
+              Following
             </button>
-          )}
+
+            {isOwnProfile && (
+              <button
+                onClick={() => setShowModal(true)}
+                style={{
+                  background: "#16a34a",
+                  color: "white",
+                  padding: "8px 14px",
+                  borderRadius: "8px",
+                  border: "none",
+                  cursor: "pointer",
+                  fontWeight: "bold"
+                }}
+              >
+                Create Post
+              </button>
+            )}
+
+          </div>
         </div>
 
-        {/* POSTS */}
+        {/* POSTS (unchanged) */}
         <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
           {posts.map(post => {
             const postComments = comments[post.id] || [];
@@ -188,20 +264,25 @@ export default function UserPage() {
                 padding: "16px",
                 borderRadius: "12px"
               }}>
-
-                {/* IMAGE */}
                 {post.image_url && (
-                  <img
-                    src={post.image_url}
-                    style={{
-                      width: "100%",
-                      borderRadius: "10px",
-                      marginBottom: "10px"
-                    }}
-                  />
+                  <div style={{
+                    width: "100%",
+                    aspectRatio: "16/9",
+                    overflow: "hidden",
+                    borderRadius: "10px",
+                    marginBottom: "10px"
+                  }}>
+                    <img
+                      src={post.image_url}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover"
+                      }}
+                    />
+                  </div>
                 )}
 
-                {/* PLANT */}
                 <p
                   style={{
                     color: "#16a34a",
@@ -215,7 +296,6 @@ export default function UserPage() {
 
                 <p>{post.description}</p>
 
-                {/* LIKE BUTTON (FIXED) */}
                 <button
                   onClick={() => toggleLike(post.id)}
                   style={{
@@ -232,46 +312,72 @@ export default function UserPage() {
                   👍 {post.like_count || 0}
                 </button>
 
-                {/* COMMENTS */}
                 <div style={{ marginTop: "12px" }}>
-                  {visible.map(c => (
-                    <div key={c.id}>
-                      <b>{c.username}</b>: {c.content}
-                    </div>
-                  ))}
-                </div>
+                  <div style={{
+                    maxHeight: isExpanded ? "140px" : "auto",
+                    overflowY: isExpanded ? "auto" : "visible",
+                    marginBottom: "6px"
+                  }}>
+                    {visible.map(c => (
+                      <div key={c.id} style={{ marginBottom: "4px" }}>
+                        <b>{c.username}</b>: {c.content}
+                      </div>
+                    ))}
+                  </div>
 
-                <div style={{ display: "flex", gap: "6px", marginTop: "8px" }}>
-                  <input
-                    value={newComment[post.id] || ""}
-                    onChange={(e) =>
-                      setNewComment(prev => ({
-                        ...prev,
-                        [post.id]: e.target.value
-                      }))
-                    }
-                    placeholder="Add comment..."
-                    style={{
-                      flex: 1,
-                      padding: "6px",
-                      borderRadius: "6px",
-                      border: "1px solid #ccc"
-                    }}
-                  />
+                  {postComments.length > 2 && (
+                    <button
+                      onClick={() =>
+                        setExpanded(prev => ({
+                          ...prev,
+                          [post.id]: !prev[post.id]
+                        }))
+                      }
+                      style={{
+                        marginBottom: "6px",
+                        background: "#e5e7eb",
+                        border: "none",
+                        padding: "4px 8px",
+                        borderRadius: "6px",
+                        cursor: "pointer"
+                      }}
+                    >
+                      {isExpanded ? "Hide comments" : "View all comments"}
+                    </button>
+                  )}
 
-                  <button
-                    onClick={() => submitComment(post.id)}
-                    style={{
-                      background: "#16a34a",
-                      color: "white",
-                      border: "none",
-                      padding: "6px 10px",
-                      borderRadius: "6px",
-                      cursor: "pointer"
-                    }}
-                  >
-                    Post
-                  </button>
+                  <div style={{ display: "flex", gap: "6px" }}>
+                    <input
+                      value={newComment[post.id] || ""}
+                      onChange={(e) =>
+                        setNewComment(prev => ({
+                          ...prev,
+                          [post.id]: e.target.value
+                        }))
+                      }
+                      placeholder="Add comment..."
+                      style={{
+                        flex: 1,
+                        padding: "6px",
+                        borderRadius: "6px",
+                        border: "1px solid #ccc"
+                      }}
+                    />
+
+                    <button
+                      onClick={() => submitComment(post.id)}
+                      style={{
+                        background: "#16a34a",
+                        color: "white",
+                        border: "none",
+                        padding: "6px 10px",
+                        borderRadius: "6px",
+                        cursor: "pointer"
+                      }}
+                    >
+                      Post
+                    </button>
+                  </div>
                 </div>
 
               </div>
@@ -279,7 +385,65 @@ export default function UserPage() {
           })}
         </div>
 
-        {/* MODAL */}
+        {/* FOLLOWING MODAL */}
+        {showFollowingModal && (
+          <div style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.6)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000
+          }}>
+            <div style={{
+              background: "white",
+              padding: "20px",
+              borderRadius: "12px",
+              width: "100%",
+              maxWidth: "400px"
+            }}>
+              <h2>Following</h2>
+
+              {followingList.length === 0 && (
+                <p style={{ color: "#666" }}>No users followed.</p>
+              )}
+
+              {followingList.map(u => (
+                <div
+                  key={u.id}
+                  onClick={() => {
+                    setShowFollowingModal(false);
+                    router.push(`/user/${u.id}`);
+                  }}
+                  style={{
+                    padding: "8px 0",
+                    cursor: "pointer",
+                    borderBottom: "1px solid #eee"
+                  }}
+                >
+                  {u.username}
+                </div>
+              ))}
+
+              <button
+                onClick={() => setShowFollowingModal(false)}
+                style={{
+                  marginTop: "10px",
+                  width: "100%",
+                  padding: "8px",
+                  border: "none",
+                  borderRadius: "6px",
+                  background: "#e5e7eb"
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* CREATE POST MODAL (unchanged) */}
         {showModal && (
           <div style={{
             position: "fixed",
@@ -297,13 +461,19 @@ export default function UserPage() {
               width: "100%",
               maxWidth: "500px"
             }}>
-              <h2 style={{ marginBottom: "10px" }}>Create Post</h2>
+              <h2>Create Post</h2>
 
               <input
                 value={plantQuery}
                 onChange={(e) => searchPlants(e.target.value)}
                 placeholder="Search plant..."
-                style={{ width: "100%", padding: "8px", marginBottom: "8px" }}
+                style={{
+                  width: "100%",
+                  padding: "8px",
+                  marginBottom: "8px",
+                  border: "1px solid #ccc",
+                  borderRadius: "6px"
+                }}
               />
 
               {plantResults.map(p => (
@@ -322,6 +492,12 @@ export default function UserPage() {
 
               <input
                 type="file"
+                style={{
+                  border: "1px solid #ccc",
+                  padding: "6px",
+                  borderRadius: "6px",
+                  marginTop: "6px"
+                }}
                 onChange={(e) => {
                   const file = e.target.files[0];
                   setImageFile(file);
@@ -330,17 +506,35 @@ export default function UserPage() {
               />
 
               {imagePreview && (
-                <img
-                  src={imagePreview}
-                  style={{ width: "100%", marginTop: "10px" }}
-                />
+                <div style={{
+                  width: "100%",
+                  aspectRatio: "16/9",
+                  overflow: "hidden",
+                  borderRadius: "8px",
+                  marginTop: "10px"
+                }}>
+                  <img
+                    src={imagePreview}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover"
+                    }}
+                  />
+                </div>
               )}
 
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Description..."
-                style={{ width: "100%", marginTop: "10px", padding: "8px" }}
+                style={{
+                  width: "100%",
+                  marginTop: "10px",
+                  padding: "8px",
+                  border: "1px solid #ccc",
+                  borderRadius: "6px"
+                }}
               />
 
               <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
