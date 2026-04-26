@@ -249,7 +249,6 @@ export default function UserPage() {
           </div>
         </div>
 
-        {/* POSTS (unchanged) */}
         <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
           {posts.map(post => {
             const postComments = comments[post.id] || [];
@@ -385,7 +384,6 @@ export default function UserPage() {
           })}
         </div>
 
-        {/* FOLLOWING MODAL */}
         {showFollowingModal && (
           <div style={{
             position: "fixed",
@@ -443,7 +441,6 @@ export default function UserPage() {
           </div>
         )}
 
-        {/* CREATE POST MODAL (unchanged) */}
         {showModal && (
           <div style={{
             position: "fixed",

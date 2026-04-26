@@ -140,13 +140,6 @@ export default function SignupPage() {
             {gettingLocation ? "Getting location..." : "Use My Location"}
           </button>
 
-          {/* STATUS */}
-          {(form.latitude && form.longitude) && (
-            <p className="text-sm text-green-600 text-center">
-              Location set ✓ ({form.latitude}, {form.longitude})
-            </p>
-          )}
-
           <button
             type="submit"
             className="w-full bg-green-600 text-white p-2 rounded-lg hover:bg-green-700"

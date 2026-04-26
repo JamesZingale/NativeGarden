@@ -7,10 +7,9 @@ export default function PlantPage({ params }) {
 
   useEffect(() => {
     async function load() {
-      const resolvedParams = await params; // <-- FIX HERE
+      const resolvedParams = await params;
       setPlantId(resolvedParams.id);
     }
-
     load();
   }, [params]);
 
@@ -25,34 +24,49 @@ export default function PlantPage({ params }) {
   if (!plant) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p>Loading...</p>
+        <p className="text-gray-500 text-lg">Loading plant...</p>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gray-100 flex justify-center p-6">
-      <div className="bg-white shadow-md rounded-2xl p-8 w-full max-w-2xl">
+      <div className="w-full max-w-3xl space-y-6">
 
-        <h1 className="text-3xl font-bold mb-2">
-          {plant.common_name}
-        </h1>
+        <div className="bg-white shadow-md rounded-2xl p-6">
+          <h1 className="text-3xl font-bold text-green-700">
+            {plant.common_name}
+          </h1>
 
-        <p className="text-gray-600 italic mb-6">
-          {plant.scientific_name}
-        </p>
+          <p className="text-gray-500 italic mt-1">
+            {plant.scientific_name}
+          </p>
+        </div>
 
-        <div className="space-y-2">
-          <p><strong>Plant Type:</strong> {plant.plant_type}</p>
-          <p><strong>Family:</strong> {plant.plant_family}</p>
-          <p><strong>State:</strong> {plant.state}</p>
-          <p><strong>Sun Exposure:</strong> {plant.sun_exposure}</p>
-          <p><strong>Soil Moisture:</strong> {plant.soil_moisture}</p>
-          <p><strong>Growth Rate:</strong> {plant.growth_rate}</p>
-          <p><strong>Flower Color:</strong> {plant.flower_color}</p>
+        <div className="bg-white shadow-md rounded-2xl p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+
+          <Info label="Plant Type" value={plant.plant_type} />
+          <Info label="Family" value={plant.plant_family} />
+          <Info label="State" value={plant.state} />
+          <Info label="Sun Exposure" value={plant.sun_exposure} />
+          <Info label="Soil Moisture" value={plant.soil_moisture} />
+          <Info label="Growth Rate" value={plant.growth_rate} />
+          <Info label="Flower Color" value={plant.flower_color} />
+
         </div>
 
       </div>
+    </div>
+  );
+}
+
+function Info({ label, value }) {
+  return (
+    <div className="bg-gray-50 rounded-xl p-4 border">
+      <p className="text-sm text-gray-500">{label}</p>
+      <p className="font-semibold text-gray-800">
+        {value || "—"}
+      </p>
     </div>
   );
 }

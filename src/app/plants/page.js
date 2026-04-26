@@ -154,9 +154,6 @@ export default function PlantsPage() {
         {plants.length > 0 && (
           <div className="bg-white p-6 rounded-2xl shadow-md">
 
-            <h2 className="text-xl font-semibold mb-6">
-              Plants in {selectedState}
-            </h2>
 
             <div
               style={{

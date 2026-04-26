@@ -18,27 +18,88 @@ export default function Navbar() {
   };
 
   return (
-    <div className="w-full bg-white shadow-md p-4 flex justify-between items-center">
-      <div className="font-bold text-lg">Native Garden</div>
+    <div style={{
+      width: "100%",
+      background: "white",
+      boxShadow: "0 2px 6px rgba(0,0,0,0.1)"
+    }}>
 
-      <div className="space-x-4">
-        {user ? (
-          <>
-            <span className="font-medium">{user.username}</span>
-            <button
-              onClick={handleLogout}
-              className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600"
-            >
-              Logout
-            </button>
-          </>
-        ) : (
-          <>
-            <a href="/login" className="hover:underline">Login</a>
-            <a href="/signup" className="hover:underline">Sign Up</a>
-          </>
-        )}
+      {/* TOP ROW */}
+      <div style={{
+        padding: "16px",
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center"
+      }}>
+        <div
+          style={{ fontWeight: "bold", fontSize: "18px", cursor: "pointer" }}
+          onClick={() => router.push("/")}
+        >
+          Native Garden
+        </div>
+
+        <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+          {user ? (
+            <>
+              <span
+                style={{ cursor: "pointer", fontWeight: "500" }}
+                onClick={() => router.push(`/user/${user.id}`)}
+              >
+                {user.username}
+              </span>
+
+              <button
+                onClick={handleLogout}
+                style={{
+                  background: "#ef4444",
+                  color: "white",
+                  padding: "6px 10px",
+                  borderRadius: "6px",
+                  border: "none",
+                  cursor: "pointer"
+                }}
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <a href="/login">Login</a>
+              <a href="/signup">Sign Up</a>
+            </>
+          )}
+        </div>
       </div>
+
+      <div style={{
+        borderTop: "1px solid #ddd",
+        padding: "10px 20px",
+        display: "flex",
+        gap: "20px",
+        background: "#f9fafb"
+      }}>
+        <button
+          onClick={() => router.push("/feed")}
+          style={{ cursor: "pointer" }}
+        >
+          Feed
+        </button>
+
+        <button
+          onClick={() => router.push("/map")}
+          style={{ cursor: "pointer" }}
+        >
+          Map
+        </button>
+
+        <button
+          onClick={() => router.push("/plants")}
+          style={{ cursor: "pointer" }}
+        >
+          Plants
+        </button>
+      </div>
+
     </div>
   );
 }
